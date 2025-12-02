@@ -35,10 +35,14 @@ def rollout(env: gym.Env, net: ActorCritic, steps=5000):
     obs = env.reset()[0]
     records = []
     score, scores = 0, []
-    for _ in range(steps):
+    while True:
         act, logp, ent, val = map(to_np, net.act(obs))
         next_obs, rew, term, trunc, _ = env.step(act)
-        next_val = 0.0 if term else to_np(net.act(next_obs)[-1])
+        next_val = 0 if term else None
+        if trunc:
+            next_val = to_np(net.act(next_obs)[-1])
+        if len(records) and records[-1][-1] is None:
+            records[-1][-1] = val
         records.append([obs, act, logp, rew, term, val, next_val])
         end = term or trunc
         obs = env.reset()[0] if end else next_obs
@@ -47,6 +51,8 @@ def rollout(env: gym.Env, net: ActorCritic, steps=5000):
             print(f"score: {score}")
             scores.append(score)
             score = 0
+            if len(records) >= steps:
+                break
     return [np.array(x) for x in transpose(records)], scores
 
 
@@ -64,7 +70,7 @@ def run_RL(env: gym.Env, epochs=10):
             break
         rew, term, val, next_val = records[-4:]
         adv, ret = tensor(gae_adv_ret(rew, term, val, next_val))
-        obs, act, logp_old, rew, term, val, next_val = tensor(records)
+        obs, act, logp_old = tensor(records[:3])
 
         for _ in range(epochs):
             _, logp, ent, val = net.act(obs, act)
