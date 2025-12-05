@@ -1,3 +1,4 @@
-numba
+gymnasium
 numpy
 torch
+trading_models

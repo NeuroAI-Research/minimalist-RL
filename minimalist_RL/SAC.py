@@ -50,8 +50,7 @@ class ActorCritic(nn.Module):
     def __init__(s, env: gym.Env, sizes=[256, 256], Act=nn.Tanh):
         super().__init__()
         obs_dim = env.observation_space.shape[0]
-        x = env.action_space
-        act_dim, s.low, s.high = x.shape[0], x.low, x.high
+        act_dim = env.action_space.shape[0]
         s.pi = NormalActor([obs_dim, *sizes, act_dim], Act)
         s.q1 = QFunc(mlp([obs_dim + act_dim, *sizes, 1], Act))
         s.q2 = deepcopy(s.q1)
@@ -67,8 +66,7 @@ class SAC:
     polyak = 0.995
 
     def __init__(s, ac: ActorCritic):
-        s.ac = ac
-        s.ac_tar = deepcopy(ac)
+        s.ac, s.ac_tar = ac, deepcopy(ac)
         for p in s.ac_tar.parameters():
             p.requires_grad = False
         s.pi_opt = tc.optim.Adam(ac.pi.parameters(), s.lr)
@@ -84,8 +82,7 @@ class SAC:
 
     def pi_loss(s, d: RLData):
         act, logp = s.ac.pi(d.obs)
-        q = tc.min(*s.ac.q1_q2(d.obs, act))
-        return tc.mean(s.alpha * logp - q)
+        return tc.mean(s.alpha * logp - tc.min(*s.ac.q1_q2(d.obs, act)))
 
     def update(s, d: RLData):
         s.q_opt.zero_grad()

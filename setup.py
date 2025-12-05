@@ -5,7 +5,7 @@ with open("README.md", encoding="utf-8") as f:
 
 setup(
     name="minimalist-RL",
-    version="0.0.2",
+    version="0.0.3",
     author="Ricky Ding",
     author_email="e0134117@u.nus.edu",
     description="Minimalist & Decoupled Reinforcement Learning.",
@@ -20,6 +20,7 @@ setup(
         "reinforcement-learning",
         "rl",
         "ppo",
+        "sac",
         "pytorch",
         "minimalist",
     ],

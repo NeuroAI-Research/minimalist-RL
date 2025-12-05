@@ -1,4 +1,5 @@
 import itertools
+import sys
 import time
 from copy import deepcopy
 
@@ -9,7 +10,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions.normal import Normal
 from torch.optim import Adam
-from utils import EpochLogger
+
+from minimalist_RL.SAC import RLData, make_test_sac
+
+from .utils import EpochLogger
+
+DEBUG = True
+debug_seed = lambda: torch.manual_seed(0) if DEBUG else None
 
 
 def combined_shape(length, shape=None):
@@ -360,7 +367,12 @@ def sac(
     def update(data):
         # First run one gradient descent step for Q1 and Q2
         q_optimizer.zero_grad()
+        debug_seed()
         loss_q, q_info = compute_loss_q(data)
+        if DEBUG:
+            sac = make_test_sac(env, ac, ac_targ)
+            debug_seed()
+            print(loss_q, sac.q_loss(RLData(data)))
         loss_q.backward()
         q_optimizer.step()
 
@@ -374,7 +386,13 @@ def sac(
 
         # Next run one gradient descent step for pi.
         pi_optimizer.zero_grad()
+        debug_seed()
         loss_pi, pi_info = compute_loss_pi(data)
+        if DEBUG:
+            sac = make_test_sac(env, ac, ac_targ)
+            debug_seed()
+            print(loss_pi, sac.pi_loss(RLData(data)))
+            sys.exit(0)
         loss_pi.backward()
         pi_optimizer.step()
 
@@ -425,8 +443,7 @@ def sac(
 
         # Step the env
         # observation, reward, terminated, truncated, info = env.step(action)
-        o2, r, term, trunc, _ = env.step(a)
-        d = term or trunc
+        o2, r, d, trunc, _ = env.step(a)
         ep_ret += r
         ep_len += 1
 
