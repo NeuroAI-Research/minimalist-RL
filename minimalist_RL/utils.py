@@ -1,3 +1,4 @@
+import random
 from typing import Callable, Dict
 
 import gymnasium as gym
@@ -8,6 +9,7 @@ from trading_models.utils import plot_general, shape, tensor
 
 
 def set_seed(x=0):
+    random.seed(x)
     np.random.seed(x)
     tc.manual_seed(x)
 
@@ -74,7 +76,7 @@ def train_RL(
     steps=1e6,
     rand_steps=1e3,
     batch_size=100,
-    get_test_score=lambda: np.nan,
+    get_test_info=lambda: {},
     f_test=100,
 ):
     sp = env.action_space
@@ -92,10 +94,8 @@ def train_RL(
         ep_hist.push(info)
         obs, score = obs2, score + rew
         if term or trunc:
-            test_score = get_test_score() if hist.size % f_test == 0 else np.nan
-            h = dict(
-                score=score, test_score=test_score, step=t, is_rand_act=t < rand_steps
-            )
+            test_info = get_test_info() if hist.size % f_test == 0 else {}
+            h = {"score": score, "step": t, "rand_act": t < rand_steps, **test_info}
             hist.push(h)
             id = env.spec.id if env.spec else env.__class__.__name__
             plot_general({**hist.dict(), **ep_hist.dict()}, id)
